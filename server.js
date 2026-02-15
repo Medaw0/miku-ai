@@ -20,7 +20,7 @@ app.post("/chat", async (req, res) => {
     }
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/gpt2",
+      "https://router.huggingface.co/hf-inference/models/gpt2",
       {
         method: "POST",
         headers: {
