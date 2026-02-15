@@ -1,39 +1,61 @@
-import express from "express";
-import fetch from "node-fetch";
+const express = require("express");
+const fetch = require("node-fetch");
+const cors = require("cors");
 
 const app = express();
+
+app.use(cors());
 app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("Miku AI is running");
+});
 
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
 
-    const response = await fetch(
-  "https://api-inference.huggingface.co/models/TheBloke/vicuna-7B-1.1-HF",
-  {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      inputs: `You are Hatsune Miku inside a Roblox game. Reply short and in character.\n\nUser: ${userMessage}`
-    })
-  }
-);
-
-    let reply = "AI error.";
-
-    if (Array.isArray(data) && data[0]?.generated_text) {
-      reply = data[0].generated_text;
+    if (!userMessage) {
+      return res.json({ reply: "No message provided." });
     }
 
-    res.json({ reply });
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/gpt2",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: `You are Hatsune Miku inside a Roblox game. Reply short and in character.\nUser: ${userMessage}\nMiku:`,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    console.log("HF RESPONSE:", result);
+
+    if (result.error) {
+      return res.json({ reply: "HF Error: " + result.error });
+    }
+
+    let reply = "No response.";
+
+    if (Array.isArray(result) && result[0]?.generated_text) {
+      reply = result[0].generated_text;
+    }
+
+    res.json({ reply: reply });
 
   } catch (error) {
-  console.error("FULL ERROR:", error);
-  res.json({ reply: "Server error." });
-}
+    console.error("FULL ERROR:", error);
+    res.json({ reply: "Server error." });
+  }
+});
 
+const PORT = process.env.PORT || 3000;
 
-app.listen(3000, () => console.log("Server running"));
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
