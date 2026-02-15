@@ -3,7 +3,6 @@ const fetch = require("node-fetch");
 const cors = require("cors");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -15,12 +14,8 @@ app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
 
-    if (!userMessage) {
-      return res.json({ reply: "No message provided." });
-    }
-
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/gpt2",
+      "https://router.huggingface.co/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -28,7 +23,18 @@ app.post("/chat", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: `You are Hatsune Miku inside a Roblox game. Reply short and in character.\nUser: ${userMessage}\nMiku:`,
+          model: "openai/gpt-oss-20b",
+          messages: [
+            {
+              role: "system",
+              content: "You are Hatsune Miku inside a Roblox game. Reply short and cute."
+            },
+            {
+              role: "user",
+              content: userMessage
+            }
+          ],
+          max_tokens: 100
         }),
       }
     );
@@ -40,11 +46,8 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply: "HF Error: " + result.error });
     }
 
-    let reply = "No response.";
-
-    if (Array.isArray(result) && result[0]?.generated_text) {
-      reply = result[0].generated_text;
-    }
+    const reply =
+      result.choices?.[0]?.message?.content || "No response.";
 
     res.json({ reply: reply });
 
@@ -55,7 +58,6 @@ app.post("/chat", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
