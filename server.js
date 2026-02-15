@@ -6,6 +6,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const conversations = {}; // oyuncu bazlı hafıza
+
 app.get("/", (req, res) => {
   res.send("Miku AI is running");
 });
@@ -13,6 +15,21 @@ app.get("/", (req, res) => {
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
+    const userId = req.body.userId || "global";
+
+    if (!conversations[userId]) {
+      conversations[userId] = [
+        {
+          role: "system",
+          content: "You are Hatsune Miku inside a Roblox game. Be cute, energetic and short."
+        }
+      ];
+    }
+
+    conversations[userId].push({
+      role: "user",
+      content: userMessage
+    });
 
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
@@ -24,36 +41,36 @@ app.post("/chat", async (req, res) => {
         },
         body: JSON.stringify({
           model: "openai/gpt-oss-20b",
-          messages: [
-            {
-              role: "system",
-              content: "You are Hatsune Miku inside a Roblox game. Reply short and cute."
-            },
-            {
-              role: "user",
-              content: userMessage
-            }
-          ],
-          max_tokens: 100
+          messages: conversations[userId],
+          max_tokens: 120,
+          temperature: 0.7
         }),
       }
     );
 
     const result = await response.json();
-    console.log("HF RESPONSE:", result);
 
-    if (result.error) {
-      return res.json({ reply: "HF Error: " + result.error });
+    let reply = result.choices?.[0]?.message?.content;
+
+    if (!reply || reply.trim() === "") {
+      reply = "Eeeh? Say that again~ 🎵";
     }
 
-    const reply =
-      result.choices?.[0]?.message?.content || "No response.";
+    conversations[userId].push({
+      role: "assistant",
+      content: reply
+    });
 
-    res.json({ reply: reply });
+    // Hafızayı sonsuza kadar büyütmeyelim
+    if (conversations[userId].length > 20) {
+      conversations[userId] = conversations[userId].slice(-20);
+    }
+
+    res.json({ reply });
 
   } catch (error) {
-    console.error("FULL ERROR:", error);
-    res.json({ reply: "Server error." });
+    console.error("ERROR:", error);
+    res.json({ reply: "Something glitched~ 💫" });
   }
 });
 
