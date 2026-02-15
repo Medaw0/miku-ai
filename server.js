@@ -30,9 +30,10 @@ app.post("/chat", async (req, res) => {
 
     res.json({ reply });
 
-  } catch (err) {
-    res.json({ reply: "Server error." });
-  }
-});
+  } catch (error) {
+  console.error("FULL ERROR:", error);
+  res.json({ reply: "Server error." });
+}
+
 
 app.listen(3000, () => console.log("Server running"));
