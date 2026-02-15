@@ -9,7 +9,7 @@ app.post("/chat", async (req, res) => {
     const userMessage = req.body.message;
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://api-inference.huggingface.co/models/TheBloke/vicuna-7B-1.1-HF",
       {
         method: "POST",
         headers: {
