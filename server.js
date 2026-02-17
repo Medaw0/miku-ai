@@ -67,7 +67,7 @@ app.post("/chat", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-20b",
+          model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
           max_tokens: 60,
           temperature: 0.6
