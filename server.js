@@ -52,8 +52,8 @@ Stay energetic but respond properly to what the user says.
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
-          max_tokens: 200,
-          temperature: 0.9
+          max_tokens: 60,
+          temperature: 0.6
         })
       }
     );
