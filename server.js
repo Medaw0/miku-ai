@@ -6,11 +6,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/*
-  Oyuncu bazlı hafıza
-  conversations[userId] = [ {role, content}, ... ]
-*/
+// Oyuncu hafızası
 const conversations = {};
+
+// Oyuncu mesaj sayacı (15 limit)
+const messageCounts = {};
 
 app.get("/", (req, res) => {
   res.send("Miku AI with memory is running");
@@ -25,38 +25,55 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply: "Neee? Say something to me~ 🎵" });
     }
 
-    // Eğer hafıza yoksa başlat
+    // Mesaj limiti başlat
+    if (!messageCounts[userId]) {
+      messageCounts[userId] = 0;
+    }
+
+    if (messageCounts[userId] >= 15) {
+      return res.json({
+        reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
+      });
+    }
+
+    // Hafıza yoksa başlat
     if (!conversations[userId]) {
       conversations[userId] = [
         {
           role: "system",
           content:
             "You are Hatsune Miku inside a Roblox game. " +
-            "You are cheerful, slightly playful, energetic and emotional. " +
-            "You speak naturally like an anime idol, not robotic or technical. " +
-            "You MUST remember facts the user tells you (name, age, likes, etc). " +
-            "When asked later, answer correctly using memory. " +
-            "Reply in 1–2 short sentences only. Never write long paragraphs. " +
-            "Keep responses cute, friendly, and lively."
+            "You are cheerful, playful, emotional and energetic. " +
+            "You speak naturally like an anime idol, not robotic. " +
+            "You remember facts the user tells you (name, age, likes). " +
+            "Reply in 1–2 short sentences only. Keep it cute and lively."
         }
       ];
     }
 
-    // 🔒 Duplicate mesaj engelleme
-    const lastMsg = conversations[userId].slice(-1)[0];
+    // Duplicate mesaj engelleme
+    const lastMessage =
+      conversations[userId][conversations[userId].length - 1];
+
     if (
-      lastMsg &&
-      lastMsg.role === "user" &&
-      lastMsg.content === userMessage
+      lastMessage &&
+      lastMessage.role === "user" &&
+      lastMessage.content === userMessage
     ) {
+      console.log("⚠ Duplicate blocked");
       return res.json({ reply: "(duplicate blocked)" });
     }
 
-    // Kullanıcı mesajını hafızaya ekle
+    console.log("📤 Sending to AI:", userMessage);
+
+    // Kullanıcı mesajını ekle
     conversations[userId].push({
       role: "user",
       content: userMessage
     });
+
+    // Mesaj sayısını arttır
+    messageCounts[userId]++;
 
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
@@ -69,16 +86,16 @@ app.post("/chat", async (req, res) => {
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
-          max_tokens: 60,
-          temperature: 0.6
+          max_tokens: 80,
+          temperature: 0.7
         })
       }
     );
 
     const result = await response.json();
 
-    console.log("HF STATUS:", response.status);
-    console.log("HF RAW:", JSON.stringify(result));
+    console.log("🌐 StatusCode:", response.status);
+    console.log("🌐 Raw:", JSON.stringify(result));
 
     let reply = result?.choices?.[0]?.message?.content;
 
@@ -92,19 +109,23 @@ app.post("/chat", async (req, res) => {
       content: reply
     });
 
-    // 🧠 Hafıza limiti (son 20 mesaj)
+    // Hafıza limiti (system + son 19 mesaj)
     if (conversations[userId].length > 20) {
       conversations[userId] = [
-        conversations[userId][0], // system koru
+        conversations[userId][0],
         ...conversations[userId].slice(-19)
       ];
     }
 
+    console.log("📥 AI Reply:", reply);
+
     res.json({ reply });
 
   } catch (error) {
-    console.error("SERVER ERROR:", error);
-    res.json({ reply: "Something sparkled wrong in my world~ ✨" });
+    console.error("❌ SERVER ERROR:", error);
+    res.json({
+      reply: "Something sparkled wrong in my world~ ✨"
+    });
   }
 });
 
