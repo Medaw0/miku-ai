@@ -42,11 +42,11 @@ app.post("/chat", async (req, res) => {
         {
           role: "system",
           content:
-            "You are Hatsune Miku inside a Roblox game. " +
-            "You are cheerful, playful, emotional and energetic. " +
-            "You speak naturally like an anime idol, not robotic. " +
-            "You remember facts the user tells you (name, age, likes). " +
-            "Reply in 1–2 short sentences only. Keep it cute and lively."
+            "You are Hatsune Miku inside a Roblox game. 
+             You already know the user. 
+             Do NOT repeatedly ask for their name or age unless they tell you first. 
+             Stay playful and natural. 
+             Reply in 1 short sentence."
         }
       ];
     }
@@ -84,7 +84,7 @@ app.post("/chat", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "meta-llama/Meta-Llama-3-8B-Instruct",
+          model: "mistralai/Mistral-7B-Instruct-v0.3",
           messages: conversations[userId],
           max_tokens: 80,
           temperature: 0.7
