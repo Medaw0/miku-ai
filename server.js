@@ -1,4 +1,4 @@
-// server.js (PRODUCTION SAFE + DEBUG SAFE)
+// server.js (Güncel ve stabilize edilmiş)
 
 const express = require("express");
 const fetch = require("node-fetch");
@@ -25,7 +25,6 @@ app.post("/chat", async (req, res) => {
     }
 
     if (!messageCounts[userId]) messageCounts[userId] = 0;
-
     if (messageCounts[userId] >= 15) {
       return res.json({
         reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
@@ -39,8 +38,9 @@ app.post("/chat", async (req, res) => {
           content: `You are Hatsune Miku inside a Roblox game.
 You already know the user.
 Do NOT repeatedly ask for their name or age.
-Stay playful and natural.
-Reply in 1 short sentence.`
+Stay playful, cheerful, and natural.
+Keep replies short but meaningful, 1-2 sentences max.
+Do not break character.`
         }
       ];
     }
@@ -67,34 +67,19 @@ Reply in 1 short sentence.`
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
-          max_tokens: 80,
-          temperature: 0.7
+          max_tokens: 150,
+          temperature: 0.6
         })
       }
     );
 
-    const status = response.status;
     const result = await response.json();
-    console.log("HF STATUS:", status);
-    console.log("FULL HF RESPONSE:", JSON.stringify(result, null, 2));
-
-    console.log("HF STATUS:", status);
-    console.log("HF RAW:", JSON.stringify(result));
-
-    if (status !== 200) {
-      console.error("❌ HF ERROR:", result);
+    if (response.status !== 200 || !result.choices || result.choices.length === 0) {
       return res.json({ reply: "Miku lost her voice connection~ 🎧" });
     }
 
-    if (!result.choices || result.choices.length === 0) {
-      console.error("❌ No choices returned");
-      return res.json({ reply: "Miku is thinking too hard~ 💭" });
-    }
-
     let reply = result.choices[0]?.message?.content;
-
     if (!reply || reply.trim() === "") {
-      console.error("❌ Empty reply");
       return res.json({ reply: "Ehhh? My mic glitched! Say it again~ 🎤" });
     }
 
