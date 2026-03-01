@@ -58,7 +58,7 @@ Reply in 1 short sentence.`
       content: userMessage
     });
 
-    // AI’ye gönder
+    // HF API request
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
       {
@@ -79,12 +79,13 @@ Reply in 1 short sentence.`
     const result = await response.json();
 
     console.log("🌐 StatusCode:", response.status);
-    console.log("🌐 Raw:", JSON.stringify(result));
+    console.log("🌐 Raw AI response:", JSON.stringify(result, null, 2));
 
     let reply = result?.choices?.[0]?.message?.content;
 
     if (!reply || reply.trim() === "") {
-      reply = "Ehhh? My mic glitched! Say it again~ 🎤";
+      console.log("⚠ AI returned empty reply");
+      reply = "⚠ AI failed to respond"; // artık client bu mesajı alır
     }
 
     // AI cevabını hafızaya ekle
