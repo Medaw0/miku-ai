@@ -65,7 +65,7 @@ Reply in 1 short sentence.`
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "meta-llama/Llama-3-8b-instruct",
+          model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
           max_tokens: 80,
           temperature: 0.7
