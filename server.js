@@ -68,7 +68,7 @@ Reply in 1 short sentence.`
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "mistralai/Mistral-7B-Instruct-v0.3",
+          model: "tiiuae/falcon-7b-instruct",
           messages: conversations[userId],
           max_tokens: 200,
           temperature: 0.7
