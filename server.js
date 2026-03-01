@@ -75,6 +75,8 @@ Reply in 1 short sentence.`
 
     const status = response.status;
     const result = await response.json();
+    console.log("HF STATUS:", status);
+    console.log("FULL HF RESPONSE:", JSON.stringify(result, null, 2));
 
     console.log("HF STATUS:", status);
     console.log("HF RAW:", JSON.stringify(result));
