@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
@@ -8,9 +9,6 @@ app.use(express.json());
 
 // Oyuncu hafızası
 const conversations = {};
-
-// Oyuncu mesaj sayacı (15 limit)
-const messageCounts = {};
 
 app.get("/", (req, res) => {
   res.send("Miku AI with memory is running");
@@ -25,80 +23,16 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply: "Neee? Say something to me~ 🎵" });
     }
 
-    // server.js (Node.js backend)
-app.post("/chat", async (req, res) => {
-  try {
-    const userMessage = req.body.message;
-    if (!userMessage || userMessage.trim() === "") {
-      return res.json({ reply: "Neee? Say something to me~ 🎵" });
-    }
-
-    const userId = String(req.body.userId || "global");
-
     // Hafıza yoksa başlat
     if (!conversations[userId]) {
       conversations[userId] = [
         {
           role: "system",
-          content:
-            "You are Hatsune Miku inside a Roblox game. Keep it playful and natural."
-        }
-      ];
-    }
-
-    // Duplicate mesaj engelleme
-    const lastMessage = conversations[userId][conversations[userId].length - 1];
-    if (lastMessage?.role === "user" && lastMessage.content === userMessage) {
-      return res.json({ reply: "(duplicate blocked)" });
-    }
-
-    // Mesajı hafızaya ekle
-    conversations[userId].push({ role: "user", content: userMessage });
-
-    // AI’ye gönder
-    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HF_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "mistralai/Mistral-7B-Instruct-v0.3",
-        messages: conversations[userId],
-        max_tokens: 80,
-        temperature: 0.7
-      })
-    });
-
-    const result = await response.json();
-    let reply = result?.choices?.[0]?.message?.content || "Ehhh? My mic glitched! Say it again~ 🎤";
-
-    // AI cevabını hafızaya ekle
-    conversations[userId].push({ role: "assistant", content: reply });
-
-    // Hafıza limiti
-    if (conversations[userId].length > 20) {
-      conversations[userId] = [conversations[userId][0], ...conversations[userId].slice(-19)];
-    }
-
-    res.json({ reply });
-  } catch (error) {
-    console.error("❌ SERVER ERROR:", error);
-    res.json({ reply: "Something sparkled wrong in my world~ ✨" });
-  }
-});
-
-    // Hafıza yoksa başlat
-    if (!conversations[userId]) {
-      conversations[userId] = [
-        {
-          role: "system",
-          content:
-            "You are Hatsune Miku inside a Roblox game. 
-             You already know the user. 
-             Do NOT repeatedly ask for their name or age unless they tell you first. 
-             Stay playful and natural. 
-             Reply in 1 short sentence."
+          content: `You are Hatsune Miku inside a Roblox game.
+You already know the user.
+Do NOT repeatedly ask for their name or age unless they tell you first.
+Stay playful and natural.
+Reply in 1 short sentence.`
         }
       ];
     }
@@ -118,15 +52,13 @@ app.post("/chat", async (req, res) => {
 
     console.log("📤 Sending to AI:", userMessage);
 
-    // Kullanıcı mesajını ekle
+    // Kullanıcı mesajını hafızaya ekle
     conversations[userId].push({
       role: "user",
       content: userMessage
     });
 
-    // Mesaj sayısını arttır
-    messageCounts[userId]++;
-
+    // AI’ye gönder
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
       {
