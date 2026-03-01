@@ -25,16 +25,68 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply: "Neee? Say something to me~ 🎵" });
     }
 
-    // Mesaj limiti başlat
-    if (!messageCounts[userId]) {
-      messageCounts[userId] = 0;
+    // server.js (Node.js backend)
+app.post("/chat", async (req, res) => {
+  try {
+    const userMessage = req.body.message;
+    if (!userMessage || userMessage.trim() === "") {
+      return res.json({ reply: "Neee? Say something to me~ 🎵" });
     }
 
-    if (messageCounts[userId] >= 15) {
-      return res.json({
-        reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
-      });
+    const userId = String(req.body.userId || "global");
+
+    // Hafıza yoksa başlat
+    if (!conversations[userId]) {
+      conversations[userId] = [
+        {
+          role: "system",
+          content:
+            "You are Hatsune Miku inside a Roblox game. Keep it playful and natural."
+        }
+      ];
     }
+
+    // Duplicate mesaj engelleme
+    const lastMessage = conversations[userId][conversations[userId].length - 1];
+    if (lastMessage?.role === "user" && lastMessage.content === userMessage) {
+      return res.json({ reply: "(duplicate blocked)" });
+    }
+
+    // Mesajı hafızaya ekle
+    conversations[userId].push({ role: "user", content: userMessage });
+
+    // AI’ye gönder
+    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HF_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "mistralai/Mistral-7B-Instruct-v0.3",
+        messages: conversations[userId],
+        max_tokens: 80,
+        temperature: 0.7
+      })
+    });
+
+    const result = await response.json();
+    let reply = result?.choices?.[0]?.message?.content || "Ehhh? My mic glitched! Say it again~ 🎤";
+
+    // AI cevabını hafızaya ekle
+    conversations[userId].push({ role: "assistant", content: reply });
+
+    // Hafıza limiti
+    if (conversations[userId].length > 20) {
+      conversations[userId] = [conversations[userId][0], ...conversations[userId].slice(-19)];
+    }
+
+    res.json({ reply });
+  } catch (error) {
+    console.error("❌ SERVER ERROR:", error);
+    res.json({ reply: "Something sparkled wrong in my world~ ✨" });
+  }
+});
 
     // Hafıza yoksa başlat
     if (!conversations[userId]) {
