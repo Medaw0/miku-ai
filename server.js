@@ -70,7 +70,7 @@ Reply in 1 short sentence.`
         body: JSON.stringify({
           model: "mistralai/Mistral-7B-Instruct-v0.3",
           messages: conversations[userId],
-          max_tokens: 80,
+          max_tokens: 200,
           temperature: 0.7
         })
       }
@@ -81,12 +81,11 @@ Reply in 1 short sentence.`
     console.log("🌐 StatusCode:", response.status);
     console.log("🌐 Raw AI response:", JSON.stringify(result, null, 2));
 
-    let reply = result?.choices?.[0]?.message?.content;
-
-    if (!reply || reply.trim() === "") {
-      console.log("⚠ AI returned empty reply");
-      reply = "⚠ AI failed to respond"; // artık client bu mesajı alır
-    }
+    // 🔥 reply güvenli al
+    let reply =
+      result?.choices?.[0]?.message?.content ||
+      result?.choices?.[0]?.text ||
+      "⚠ AI failed to respond";
 
     // AI cevabını hafızaya ekle
     conversations[userId].push({
