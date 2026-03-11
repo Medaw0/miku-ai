@@ -9,7 +9,11 @@ app.use(express.json());
 const conversations = {};
 
 app.get("/", (req, res) => {
-  res.send("Miku AI with memory is running");
+  res.send("Miku AI server running");
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
 });
 
 app.post("/chat", async (req, res) => {
@@ -19,25 +23,40 @@ app.post("/chat", async (req, res) => {
     const userId = String(req.body.userId || "global");
 
     if (!userMessage || userMessage.trim() === "") {
-      return res.json({ reply: "Neee? Say something to me~ 🎵" });
+      return res.json({ reply: "Say something to me~ 🎤" });
     }
 
     if (!conversations[userId]) {
       conversations[userId] = [
         {
           role: "system",
-          content: `You are Hatsune Miku, an AI inside a Roblox game world.
-You know you are inside a game.
-Speak like a normal friendly person.
-Keep responses short and natural.`
+          content:
+            `You are Hatsune Miku inside a Roblox game world.
+You know you exist in a game.
+Speak casually like a friendly human.
+Keep responses short and natural.
+Avoid repeating questions or being overly energetic.`
         }
       ];
+    }
+
+    const lastMessage =
+      conversations[userId][conversations[userId].length - 1];
+
+    if (
+      lastMessage &&
+      lastMessage.role === "user" &&
+      lastMessage.content === userMessage
+    ) {
+      return res.json({ reply: "(duplicate blocked)" });
     }
 
     conversations[userId].push({
       role: "user",
       content: userMessage
     });
+
+    console.log("📤 User:", userMessage);
 
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
@@ -58,8 +77,8 @@ Keep responses short and natural.`
 
     const result = await response.json();
 
-    if (!result.choices) {
-      return res.json({ reply: "Miku lost connection~ 🎧" });
+    if (!result.choices || !result.choices[0]) {
+      return res.json({ reply: "My connection glitched~ 🎧" });
     }
 
     const reply = result.choices[0].message.content;
@@ -76,11 +95,13 @@ Keep responses short and natural.`
       ];
     }
 
+    console.log("📥 Miku:", reply);
+
     res.json({ reply });
 
   } catch (error) {
 
-    console.error(error);
+    console.error("SERVER ERROR:", error);
 
     res.json({
       reply: "Something broke in my digital world~ ✨"
@@ -90,6 +111,7 @@ Keep responses short and natural.`
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log("Server running on port", PORT)
-);
+
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
