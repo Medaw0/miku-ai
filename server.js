@@ -7,7 +7,6 @@ app.use(cors());
 app.use(express.json());
 
 const conversations = {};
-const messageCounts = {};
 
 app.get("/", (req, res) => {
   res.send("Miku AI with memory is running");
@@ -15,6 +14,7 @@ app.get("/", (req, res) => {
 
 app.post("/chat", async (req, res) => {
   try {
+
     const userMessage = req.body.message;
     const userId = String(req.body.userId || "global");
 
@@ -22,37 +22,22 @@ app.post("/chat", async (req, res) => {
       return res.json({ reply: "Neee? Say something to me~ 🎵" });
     }
 
-    if (!messageCounts[userId]) messageCounts[userId] = 0;
-    if (messageCounts[userId] >= 15) {
-      return res.json({
-        reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
-      });
-    }
-
     if (!conversations[userId]) {
       conversations[userId] = [
         {
           role: "system",
-          content: `You are Hatsune Miku, a friendly AI companion in a Roblox game.
-You are aware that you exist inside a Roblox game world.
-Talk like a casual, real friend would: warm, relatable, slightly humorous.
-Do NOT sound like a TV host or overly playful for children.
-Avoid repetitive questions and unnecessary suggestions about exploring other worlds.
-Keep replies short, natural, expressive, and context-aware for the game environment.`
+          content: `You are Hatsune Miku, an AI inside a Roblox game world.
+You know you are inside a game.
+Speak like a normal friendly person.
+Keep responses short and natural.`
         }
       ];
     }
 
-    const lastMessage = conversations[userId][conversations[userId].length - 1];
-    if (lastMessage && lastMessage.role === "user" && lastMessage.content === userMessage) {
-      console.log("⚠ Duplicate blocked");
-      return res.json({ reply: "(duplicate blocked)" });
-    }
-
-    conversations[userId].push({ role: "user", content: userMessage });
-    messageCounts[userId]++;
-
-    console.log("📤 Sending to AI:", userMessage);
+    conversations[userId].push({
+      role: "user",
+      content: userMessage
+    });
 
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
@@ -65,23 +50,24 @@ Keep replies short, natural, expressive, and context-aware for the game environm
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
-          max_tokens: 150,
-          temperature: 0.6
+          max_tokens: 120,
+          temperature: 0.7
         })
       }
     );
 
     const result = await response.json();
-    if (response.status !== 200 || !result.choices || result.choices.length === 0) {
-      return res.json({ reply: "Miku lost her voice connection~ 🎧" });
+
+    if (!result.choices) {
+      return res.json({ reply: "Miku lost connection~ 🎧" });
     }
 
-    let reply = result.choices[0]?.message?.content;
-    if (!reply || reply.trim() === "") {
-      return res.json({ reply: "Ehhh? My mic glitched! Say it again~ 🎤" });
-    }
+    const reply = result.choices[0].message.content;
 
-    conversations[userId].push({ role: "assistant", content: reply });
+    conversations[userId].push({
+      role: "assistant",
+      content: reply
+    });
 
     if (conversations[userId].length > 20) {
       conversations[userId] = [
@@ -90,14 +76,20 @@ Keep replies short, natural, expressive, and context-aware for the game environm
       ];
     }
 
-    console.log("📥 AI Reply:", reply);
     res.json({ reply });
 
   } catch (error) {
-    console.error("❌ SERVER ERROR:", error);
-    res.json({ reply: "Something sparkled wrong in my world~ ✨" });
+
+    console.error(error);
+
+    res.json({
+      reply: "Something broke in my digital world~ ✨"
+    });
+
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Server running on port", PORT));
+app.listen(PORT, () =>
+  console.log("Server running on port", PORT)
+);
