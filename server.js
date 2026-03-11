@@ -9,40 +9,51 @@ app.use(express.json());
 const conversations = {};
 const messageCounts = {};
 
-app.get("/", (req, res) => res.send("Miku AI with memory is running"));
+// HF API Key kontrolü
+if (!process.env.HF_API_KEY) {
+  console.error("❌ HF_API_KEY is not set! Miku will not work.");
+} else {
+  console.log("✔ HF_API_KEY is set");
+}
 
-// retry helper
+// Retry helper
 async function fetchWithRetry(url, options, retries = 2) {
   for (let i = 0; i <= retries; i++) {
     try {
       return await fetch(url, options);
     } catch (err) {
       if (i === retries) throw err;
+      console.warn(`⚠️ Fetch failed, retrying... (${i + 1}/${retries})`);
+      await new Promise(res => setTimeout(res, 1000)); // 1s bekle
     }
   }
 }
+
+app.get("/", (req, res) => res.send("Miku AI with memory is running"));
 
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
     const userId = String(req.body.userId || "global");
 
-    if (!userMessage || userMessage.trim() === "") 
+    if (!userMessage || userMessage.trim() === "")
       return res.json({ reply: "Neee? Say something to me~ 🎵" });
 
     if (!messageCounts[userId]) messageCounts[userId] = 0;
-    if (messageCounts[userId] >= 15) 
-      return res.json({ reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)" });
+    if (messageCounts[userId] >= 15)
+      return res.json({
+        reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
+      });
 
     if (!conversations[userId]) {
       conversations[userId] = [{
         role: "system",
-        content: `You are Hatsune Miku, a friendly AI companion in a Roblox game.
-You are aware that you exist inside a Roblox game world.
-Talk like a casual, real friend would: warm, relatable, slightly humorous.
+        content: `You are Hatsune Miku, a friendly AI inside a Roblox game.
+You are aware you exist in the game world.
+Talk like a real friend: warm, relatable, slightly humorous.
 Do NOT sound like a TV host or overly playful for children.
-Avoid repetitive questions and unnecessary suggestions about exploring other worlds.
-Keep replies short, natural, expressive, and context-aware for the game environment.`
+Avoid repetitive questions or random world-hopping.
+Keep replies short, natural, expressive, context-aware.`
       }];
     }
 
@@ -55,6 +66,7 @@ Keep replies short, natural, expressive, and context-aware for the game environm
 
     console.log("📤 Sending to AI:", userMessage);
 
+    // fetch request
     const response = await fetchWithRetry(
       "https://router.huggingface.co/v1/chat/completions",
       {
@@ -68,15 +80,18 @@ Keep replies short, natural, expressive, and context-aware for the game environm
           messages: conversations[userId],
           max_tokens: 150,
           temperature: 0.6
-        })
+        }),
+        // Node-fetch default timeout yok, HF yanıt yavaşsa retry devreye girer
       },
       2 // retry 2 kez
     );
 
     const result = await response.json();
 
-    if (response.status !== 200 || !result.choices || result.choices.length === 0)
+    if (response.status !== 200 || !result.choices || result.choices.length === 0) {
+      console.warn("⚠️ HF response not valid:", result);
       return res.json({ reply: "Miku lost her voice connection~ 🎧" });
+    }
 
     let reply = result.choices[0]?.message?.content;
     if (!reply || reply.trim() === "")
