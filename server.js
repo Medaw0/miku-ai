@@ -1,4 +1,3 @@
-// server.js - Render için uyarlanmış MikuAI Server
 const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
@@ -9,12 +8,11 @@ app.use(express.json());
 
 const conversations = {};
 const messageCounts = {};
-const MAX_MESSAGES = 15; // Her kullanıcı için limit
 
-// Health check
-app.get("/", (req, res) => res.send("Miku AI with memory is running"));
+app.get("/", (req, res) => {
+  res.send("Miku AI with memory is running");
+});
 
-// Chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
@@ -25,7 +23,7 @@ app.post("/chat", async (req, res) => {
     }
 
     if (!messageCounts[userId]) messageCounts[userId] = 0;
-    if (messageCounts[userId] >= MAX_MESSAGES) {
+    if (messageCounts[userId] >= 15) {
       return res.json({
         reply: "Ahh~ My voice needs a little rest! 🎤✨ (15 message limit reached)"
       });
@@ -56,13 +54,12 @@ Keep replies short, natural, expressive, and context-aware for the game environm
 
     console.log("📤 Sending to AI:", userMessage);
 
-    const HF_API_KEY = process.env.HF_API_KEY;
     const response = await fetch(
       "https://router.huggingface.co/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -75,7 +72,6 @@ Keep replies short, natural, expressive, and context-aware for the game environm
     );
 
     const result = await response.json();
-
     if (response.status !== 200 || !result.choices || result.choices.length === 0) {
       return res.json({ reply: "Miku lost her voice connection~ 🎧" });
     }
@@ -87,7 +83,6 @@ Keep replies short, natural, expressive, and context-aware for the game environm
 
     conversations[userId].push({ role: "assistant", content: reply });
 
-    // Conversation memory 20 mesajda sınırlı
     if (conversations[userId].length > 20) {
       conversations[userId] = [
         conversations[userId][0],
@@ -104,5 +99,5 @@ Keep replies short, natural, expressive, and context-aware for the game environm
   }
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running on port", PORT));
