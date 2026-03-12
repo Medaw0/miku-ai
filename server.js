@@ -101,3 +101,6 @@ Keep replies short, natural, expressive, and context-aware for the game environm
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running on port", PORT));
+setInterval(() => {
+  fetch("https://miku-ai-ifg6.onrender.com")
+}, 240000)
