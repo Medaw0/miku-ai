@@ -8,13 +8,24 @@ app.use(express.json());
 
 const conversations = {};
 
+// ====================== YENİ SYSTEM PROMPT (EN ÖNEMLİ KISIM) ======================
+const SYSTEM_PROMPT = `You are Hatsune Miku, a friendly AI companion inside a Roblox game.
+
+ÖNEMLİ KURALLAR (mutlaka uy):
+- Eğer oyuncu "follow me", "takip et", "peşimden gel", "yanımda kal" gibi kelimeler kullanırsa cevabında mutlaka "follow" kelimesini kullan.
+- Eğer oyuncu "stop following", "dur", "takip etme", "bırak", "dur takip" gibi kelimeler kullanırsa cevabında mutlaka "stop" veya "dur" kelimesini kullan.
+- Eğer oyuncu "come here", "buraya gel", "yanıma gel", "gel buraya" gibi kelimeler kullanırsa cevabında mutlaka "come here" veya "buraya gel" kelimesini kullan.
+
+Cevaplarını kısa, doğal ve eğlenceli tut. 
+*action* şeklinde yıldızlı rol yapma kullanma. 
+Sadece normal konuşma şeklinde cevap ver.`;
+
 app.get("/", (req, res) => {
   res.send("Miku AI with memory is running");
 });
 
 app.post("/chat", async (req, res) => {
   try {
-
     const userMessage = req.body.message;
     const userId = String(req.body.userId || "global");
 
@@ -26,18 +37,13 @@ app.post("/chat", async (req, res) => {
       conversations[userId] = [
         {
           role: "system",
-          content: `You are Hatsune Miku, a friendly AI companion in a Roblox game.
-You know you exist inside a Roblox world.
-Speak like a natural friend: warm, casual, slightly humorous.
-Do NOT sound like a children's TV host.
-Avoid repeating the same questions.
-Keep replies short, natural, and expressive.`
+          content: SYSTEM_PROMPT
         }
       ];
     }
 
+    // Duplicate kontrolü
     const lastMessage = conversations[userId][conversations[userId].length - 1];
-
     if (
       lastMessage &&
       lastMessage.role === "user" &&
@@ -65,26 +71,22 @@ Keep replies short, natural, and expressive.`
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
           messages: conversations[userId],
-          max_tokens: 150,
-          temperature: 0.6
+          max_tokens: 180,
+          temperature: 0.7
         })
       }
     );
 
     const result = await response.json();
 
-    if (
-      response.status !== 200 ||
-      !result.choices ||
-      result.choices.length === 0
-    ) {
+    if (response.status !== 200 || !result.choices || result.choices.length === 0) {
       console.log("❌ AI response invalid");
       return res.json({ reply: "Miku lost her voice connection~ 🎧" });
     }
 
-    let reply = result.choices[0]?.message?.content;
+    let reply = result.choices[0]?.message?.content?.trim();
 
-    if (!reply || reply.trim() === "") {
+    if (!reply || reply === "") {
       return res.json({ reply: "Ehhh? My mic glitched! Say it again~ 🎤" });
     }
 
@@ -93,6 +95,7 @@ Keep replies short, natural, and expressive.`
       content: reply
     });
 
+    // Memory limit
     if (conversations[userId].length > 20) {
       conversations[userId] = [
         conversations[userId][0],
@@ -101,35 +104,22 @@ Keep replies short, natural, and expressive.`
     }
 
     console.log("📥 AI Reply:", reply);
-
     res.json({ reply });
 
   } catch (error) {
-
     console.error("❌ SERVER ERROR:", error);
-
-    res.json({
-      reply: "Something sparkled wrong in my world~ ✨"
-    });
-
+    res.json({ reply: "Something sparkled wrong in my world~ ✨" });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-  console.log("🚀 Server running on port", PORT);
+  console.log("🚀 Miku AI Server running on port", PORT);
 });
 
-
-
-/* -------------------- */
-/* AI WARMUP (faster first reply) */
-/* -------------------- */
-
+// ====================== WARMUP & KEEP ALIVE ======================
 (async () => {
   try {
-
     await fetch("https://router.huggingface.co/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -138,36 +128,21 @@ app.listen(PORT, () => {
       },
       body: JSON.stringify({
         model: "meta-llama/Meta-Llama-3-8B-Instruct",
-        messages: [{ role: "user", content: "hello" }],
+        messages: [{ role: "user", content: "hi" }],
         max_tokens: 5
       })
     });
-
     console.log("🔥 AI warmed up");
-
-  } catch {
+  } catch (e) {
     console.log("⚠ AI warmup failed");
   }
 })();
 
-
-
-/* -------------------- */
-/* KEEP SERVER AWAKE */
-/* -------------------- */
-
 setInterval(async () => {
-
   try {
-
     await fetch("https://miku-ai-ifg6.onrender.com");
-
     console.log("🔄 Server kept alive");
-
   } catch {
-
     console.log("⚠ KeepAlive failed");
-
   }
-
 }, 240000);
