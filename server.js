@@ -140,8 +140,9 @@ Keep replies short, natural, and expressive.`
 
 
 
-    let reply = result.choices[0]?.message?.content;
-
+  let reply =
+    result.choices[0]?.message?.content ||
+    result.choices[0]?.message?.reasoning_content;
 
 
     if (!reply || reply.trim() === "") {
