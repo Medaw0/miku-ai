@@ -63,7 +63,7 @@ Keep replies short, natural, and expressive.`
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "Qwen/Qwen3-8B",
+          model: "Qwen/Qwen2.5-7B-Instruct",
           messages: conversations[userId],
           max_tokens: 150,
           temperature: 0.6
@@ -143,7 +143,7 @@ app.listen(PORT, () => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "Qwen/Qwen3-8B",
+        model: "Qwen/Qwen2.5-7B-Instruct",
         messages: [{ role: "user", content: "hello" }],
         max_tokens: 5
       })
