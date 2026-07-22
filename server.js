@@ -62,15 +62,15 @@ Keep replies short, natural, and expressive.`
           Authorization: `Bearer ${process.env.HF_API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: "Qwen/Qwen2.5-7B-Instruct",
-          messages: conversations[userId],
-          max_tokens: 150,
-          temperature: 0.6
-        })
-      }
-    );
-
+       body: JSON.stringify({
+    model: "Qwen/Qwen3-8B",
+    messages: conversations[userId],
+    max_tokens: 150,
+    temperature: 0.6,
+    extra_body: {
+        enable_thinking: false
+    }
+})
     const result = await response.json();
 
 console.log("📊 HF Status:", response.status);
