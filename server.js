@@ -73,14 +73,20 @@ Keep replies short, natural, and expressive.`
 
     const result = await response.json();
 
-    if (
-      response.status !== 200 ||
-      !result.choices ||
-      result.choices.length === 0
-    ) {
-      console.log("❌ AI response invalid");
-      return res.json({ reply: "Miku lost her voice connection~ 🎧" });
-    }
+console.log("📊 HF Status:", response.status);
+console.log("📦 HF Response:", JSON.stringify(result, null, 2));
+
+if (
+  response.status !== 200 ||
+  !result.choices ||
+  result.choices.length === 0
+) {
+  console.log("❌ AI response invalid");
+
+  return res.json({
+    reply: "Miku lost her voice connection~ 🎧"
+  });
+}
 
     let reply = result.choices[0]?.message?.content;
 
