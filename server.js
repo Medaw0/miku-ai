@@ -80,36 +80,36 @@ Keep replies short, natural, and expressive.`
 
 
 
-    const response = await fetch(
-      "https://router.huggingface.co/v1/chat/completions",
-      {
-        method: "POST",
+ const response = await fetch(
+  "https://router.huggingface.co/v1/chat/completions",
+  {
+    method: "POST",
 
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/json"
-        },
+    headers: {
+      Authorization: `Bearer ${process.env.HF_API_KEY}`,
+      "Content-Type": "application/json"
+    },
 
+    body: JSON.stringify({
 
-        body: JSON.stringify({
+      model: "Qwen/Qwen3-8B",
 
-          model: "Qwen/Qwen3-8B",
+      messages: conversations[userId],
 
-          messages: conversations[userId],
+      max_tokens: 300,
 
-          max_tokens: 150,
+      temperature: 0.6,
 
-          temperature: 0.6,
-
-          extra_body: {
-            enable_thinking: false
-          }
-
-        })
-
+      extra_body: {
+        chat_template_kwargs: {
+          enable_thinking: false
+        }
       }
-    );
 
+    })
+
+  }
+);
 
 
     const result = await response.json();
